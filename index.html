@@ -9,8 +9,6 @@
     body { background-color: #f4f7f6; padding-top: 50px; }
     .container { max-width: 900px; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
     .hidden { display: none !important; }
-    .status-paid { color: #28a745; font-weight: bold; }
-    .status-unpaid { color: #dc3545; font-weight: bold; }
   </style>
 </head>
 <body>
@@ -23,15 +21,11 @@
 </div>
 
 <div id="main-content" class="container hidden">
-  <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3">
-    <h3>帳單管理系統</h3>
-    <div>
-      <span id="user-info" class="me-3 text-muted"></span>
-      <button class="btn btn-sm btn-success" onclick="openBillModal()">+ 新增紀錄</button>
-      <button class="btn btn-sm btn-outline-danger" onclick="location.reload()">登出</button>
-    </div>
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h3>帳單清單</h3>
+    <button class="btn btn-success" onclick="openBillModal()">+ 新增紀錄</button>
   </div>
-  <table class="table table-hover align-middle">
+  <table class="table table-hover">
     <thead><tr><th>日期</th><th>項目</th><th>金額</th><th>狀態</th><th>照片</th><th>操作</th></tr></thead>
     <tbody id="bill-list"></tbody>
   </table>
@@ -40,7 +34,6 @@
 <div class="modal fade" id="billModal" tabindex="-1">
   <div class="modal-dialog">
     <div class="modal-content">
-      <div class="modal-header"><h5>帳單資料</h5></div>
       <div class="modal-body">
         <input type="hidden" id="edit-id"><input type="hidden" id="edit-imgId">
         <div class="mb-3"><label>日期</label><input type="date" id="edit-date" class="form-control"></div>
@@ -60,15 +53,14 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-  // 請確認此網址正確
   const GAS_URL = "https://script.google.com/macros/s/AKfycbzzyt2N7zxHqsJLBkRhN2ced4_ycS3zeZL6DuP9isTgWzKRQbkdk7xy-qs7ErTq_Aw/exec"; 
   let billModal;
 
   window.onload = () => { billModal = new bootstrap.Modal(document.getElementById('billModal')); };
 
   async function apiCall(data) {
-    const response = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify(data) });
-    return await response.json();
+    const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify(data) });
+    return await res.json();
   }
 
   async function handleLogin() {
@@ -100,13 +92,16 @@
   }
 
   async function handleSaveBill() {
+    const btn = document.getElementById('saveBtn');
     const fileInput = document.getElementById('edit-file');
+    btn.disabled = true;
+    
     let imageData = null;
     if (fileInput.files.length > 0) {
       const file = fileInput.files[0];
-      const base64 = await new Promise(r => {
+      const base64 = await new Promise((resolve) => {
         const reader = new FileReader();
-        reader.onload = () => r(reader.result);
+        reader.onload = () => resolve(reader.result);
         reader.readAsDataURL(file);
       });
       imageData = { base64: base64.split(',')[1], type: file.type, name: file.name };
@@ -124,6 +119,7 @@
     await apiCall({ action: 'saveBill', billData, imageFile: imageData });
     billModal.hide();
     loadBills();
+    btn.disabled = false;
   }
 
   function editBill(row) {
